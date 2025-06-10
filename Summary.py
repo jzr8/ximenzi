@@ -8,6 +8,8 @@ from stove import Stove
 from draw import *
 from method.EWMA import *
 from method.window_LR import *
+from method.kalman_filter import *
+from method.kalman_EWMA import *
 
 
 # 读取一个日期的excel表格 将其中的每个炉次提取为Stove对象  返回Stove对象的列表
@@ -71,6 +73,15 @@ def get_ST(input_get, month_get, date_get):
         # 读取该表格中的数据
         st_get.extend(read_singel_excel(file))
     return st_get
+
+
+# 对炉基于等级进行筛选，只保留指定等级的炉子
+def grade_filt(get_ST, get_grade):
+    new_ST = []
+    for st in get_ST:
+        if st.grade[1] in get_grade:
+            new_ST.append(st)
+    return new_ST
 
 
 # 对输入的Stove列表 进行数据统计
@@ -224,9 +235,14 @@ if __name__ == '__main__':
     input = Path('../compare_out_files_by_sheet/')  # 输入文件夹路径
     output = '../线掺配预测表2025.4_2.xlsx'  # 输出结果路径
     month = ['4']  # 提取表格的月份
-    date = [str(i) for i in range(1, 32)]  # 提取表格的日期 想要提取1~31日的，则设置为（1，32）
+    date = [str(i) for i in range(1, 32)]  # 提取表格的日期 想要提取1~31日的，则设置为(1，32)
     # 得到指定日期的Stove列表
     ST = get_ST(input, month, date)
+
+    # 筛选等级
+    # set_grade = ['0级']
+    # ST = grade_filt(ST, set_grade)
+
     # 设置标准偏差
     stand = {'Fe': 0.009, 'Cl': 0.010, 'C': 0.001, 'N': 0.001, 'O': 0.005, 'Ni': 0.004, 'Cr': 0.005, 'hard': 2.0}
 
@@ -236,7 +252,7 @@ if __name__ == '__main__':
 
     '''----------------------相关曲线图绘制-------------------------'''
     # draw_error_by_date(ST, 'Fe')  # 对指定元素绘制偏差曲线  按天
-    # draw_error_by_number(ST, 'Fe')  # 按炉次
+    # draw_error_by_number(ST, 'Cl')  # 按炉次
 
     '''-----------------------------------------------------------'''
 
@@ -258,3 +274,18 @@ if __name__ == '__main__':
     # opti_window_size(ST, stand, 'Fe')
 
     '''----------------------------------------------------------- '''
+
+    '''---------------------------kalman---------------------------'''
+    # 通过kalman滤波预测进行修正后 得到的指定元素的符合率
+    # kalman_correct(ST, stand, 'Fe', gate=0.009)
+
+    '''------------------------------------------------------------'''
+
+    '''------------------------kalman+EWMA-------------------------'''
+    # kalman+EWMA预测的均值 作为 最终预测偏差
+    # kalman_EWMA_correct(ST, stand, 'Fe', gate=0.009, theta=0.75)
+
+    # 遍历得到最优参数
+    # kalman_EWMA_opti_two(ST, stand, 'Fe')
+
+    '''------------------------------------------------------------'''

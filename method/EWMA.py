@@ -6,6 +6,7 @@ from .data_correct import *
 
 
 # 输入历史的炉子信息，为过去的每个炉子赋予加权指数偏差，同时返回下一天炉子的估计偏差
+# 以及预测过程中的所有预测偏差（包括第一个数据的预测到下一天的预测）
 def correct_predict_by_date(ST, name, gate, theta):
     # 按日期分组
     value_dict = defaultdict(list)
@@ -21,6 +22,7 @@ def correct_predict_by_date(ST, name, gate, theta):
     sorted_dates = sorted(value_dict.keys(), key=parse_date)
 
     correct_error = None
+    pre_error_list = []
 
     # 按日期顺序 计算指数加权偏差
     for d in sorted_dates:
@@ -43,17 +45,23 @@ def correct_predict_by_date(ST, name, gate, theta):
             if correct_error is not None:
                 getattr(st, name)[5] = correct_error
 
+        if correct_error is not None:
+            pre_error_list.append(correct_error)
+
         if correct_error is None:
             if e_num != 0:
                 correct_error = e_sum / e_num
+                pre_error_list.append(correct_error)
         else:
             if e_num != 0:
                 correct_error = theta * (e_sum / e_num) + (1 - theta) * correct_error
 
-    return correct_error
+    pre_error_list.append(correct_error)  # 加上最后的预测
+    return correct_error, pre_error_list
 
 
 # 输入历史的炉子信息，为过去的每个炉子赋予加权指数偏差，同时返回下一个炉子的估计偏差
+# 以及预测过程中的所有预测偏差（包括第一个数据的预测到下一炉的预测）
 def correct_predict_by_num(ST, name, gate, theta):
     # 排序  按照日期从小到大  序号从小到大
     ST.sort(key=lambda s: (s.parse_date(), s.number))
@@ -61,15 +69,18 @@ def correct_predict_by_num(ST, name, gate, theta):
         getattr(s, name)[5] = 0  # 清0
 
     correct_error = None
+    pre_error_list = []
 
     for st in ST:
         # 对每个炉子 添加指数加权偏差（除了第一个炉子外）
         if correct_error is not None:
             getattr(st, name)[5] = correct_error
+            pre_error_list.append(correct_error)
         # 对每个炉子的对应元素偏差 基于设定的阈值 进行筛选
         if getattr(st, name)[3] < gate:
             if correct_error is None:
                 correct_error = getattr(st, name)[4]
+                pre_error_list.append(correct_error)
             else:
                 correct_error = theta * getattr(st, name)[4] + (1 - theta) * correct_error
         # 限幅操作
@@ -83,7 +94,8 @@ def correct_predict_by_num(ST, name, gate, theta):
         #         else:
         #             correct_error = theta * (-gate) + (1 - theta) * correct_error
 
-    return correct_error
+    pre_error_list.append(correct_error)  # 加上最后的预测
+    return correct_error, pre_error_list
 
 
 # 将一个参数固定  得到另一个参数关于符合率的变化曲线图
@@ -130,7 +142,7 @@ def correct_opti_one(ST, stand, name):
 # 寻找最优的theta和gate搭配
 def correct_opti_two(ST, stand, name):
     theta_arange = np.linspace(0, 1, 100)  # 从0到1，等间隔分成100个点（包含1）
-    gate_arange = np.linspace(0, 0.047, 100)
+    gate_arange = np.linspace(0, 0.054, 100)
     max_percent = 0
     opt_theta = 0
     opt_gate = 0
@@ -148,7 +160,8 @@ def correct_opti_two(ST, stand, name):
 
 # 设置指定的阈值（gate）、权重（theta），返回指定元素的符合率（通过EWMA修正后）
 def EWMA_correct(ST, stand, name, gate, theta):
-    next_pre_error = correct_predict_by_date(ST, name, gate, theta)
+    next_pre_error, pre_error_list = correct_predict_by_num(ST, name, gate, theta)
     # 进行修正的估计 后的数据统计
     d_error_ave, d_max, acc, acc_p, st_per, gr_per = stat_correct(ST, stand)
     print(f'使用EWMA预测偏差，得到新的符合率：{acc_p[name]*100}%')
+    draw_error_by_number(ST, name, pre_error_list)

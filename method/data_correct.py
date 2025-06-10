@@ -1,3 +1,5 @@
+from collections import defaultdict
+import matplotlib.pyplot as plt
 
 
 # 利用偏差去修正预测 得到的结果
@@ -75,3 +77,78 @@ def stat_correct(st_list, get_stand):
     # 平均偏差  最大偏差  符合数量  符合率  标准符合率  等级符合率
     return data_error_ave, data_max, stat_accord, stat_accord_p, stat_accord['stand'] / st_num, stat_accord[
         'grade'] / st_num
+
+
+# 按日期对指定元素的偏差进行曲线绘制
+def draw_error_by_date(ST, name, pre_error):
+    # 按日期分组
+    value_dict = defaultdict(list)
+    for s in ST:
+        value_dict[s.date].append(getattr(s, name)[4])
+
+    # 排序日期（按月份和日）
+    def parse_date(s):
+        return tuple(map(int, s.split('_')))
+
+    # 得到排序后的 字典的 键   即日期
+    sorted_dates = sorted(value_dict.keys(), key=parse_date)
+
+    # 构造 x 和 y 轴数据
+    x_labels = sorted_dates
+    y_values = [sum(value_dict[d]) / len(value_dict[d]) for d in x_labels]
+
+    pre_error = pre_error[:-1]  # 去掉最后一个预测偏差
+    # 对于缺少的预测偏差，用0填充（可能头几天的数据都不适合，都排除了，因此没有相应的预测偏差）
+    if len(pre_error) < len(y_values):
+        num = len(y_values) - len(pre_error)
+        pre_error = [0]*num + pre_error
+
+    # 创建图形和坐标轴
+    fig, ax = plt.subplots()
+    # 绘制柱状图
+    ax.bar(x_labels, y_values, color='skyblue', label='real')
+    # 绘制折线图
+    ax.plot(x_labels, pre_error, color='orange', marker='o', label='predict')
+    # 添加标签和图例
+    ax.set_xlabel('date')
+    ax.set_ylabel('error')
+    ax.set_title(f'{name} error')
+    ax.legend()
+    plt.xticks(rotation=45)  # 旋转日期标签，防止重叠
+    plt.tight_layout()
+    # 显示图形
+    plt.show()
+
+
+# 按炉子序列号对指定元素的偏差进行曲线绘制
+def draw_error_by_number(ST, name, pre_error):
+    # 排序  按照日期从小到大  序号从小到大
+    ST.sort(key=lambda s: (s.parse_date(), s.number))
+
+    x_labels = []
+    y_values = []
+    for i, st in enumerate(ST, 1):
+        x_labels.append(i)
+        y_values.append(st.Fe[4])
+
+    pre_error = pre_error[:-1]  # 去掉最后一个预测偏差
+    # 对于缺少的预测偏差，用0填充（可能头几天的数据都不适合，都排除了，因此没有相应的预测偏差）
+    if len(pre_error) < len(y_values):
+        num = len(y_values) - len(pre_error)
+        pre_error = [0]*num + pre_error
+
+    # 创建图形和坐标轴
+    fig, ax = plt.subplots()
+    # 绘制柱状图
+    ax.bar(x_labels, y_values, color='skyblue', label='real')
+    # 绘制折线图
+    ax.plot(x_labels, pre_error, color='orange', marker='o', label='predict')
+    # 添加标签和图例
+    ax.set_xlabel('date')
+    ax.set_ylabel('error')
+    ax.set_title(f'{name} error')
+    ax.legend()
+    plt.xticks(rotation=45)  # 旋转日期标签，防止重叠
+    plt.tight_layout()
+    # 显示图形
+    plt.show()
