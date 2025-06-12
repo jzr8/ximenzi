@@ -4,15 +4,15 @@ class Stove:
         self.date = date
         self.number = number
         self.grade = [pre['grade'], real['grade']]
-        # [符合flag，预计值，实测值，偏差绝对值， 偏差（预计-实测），预测的偏差]
-        self.Fe = [0, pre['Fe'], real['Fe'], 0, 0, 0]
-        self.Cl = [0, pre['Cl'], real['Cl'], 0, 0, 0]
-        self.C = [0, pre['C'], real['C'], 0, 0, 0]
-        self.N = [0, pre['N'], real['N'], 0, 0, 0]
-        self.O = [0, pre['O'], real['O'], 0, 0, 0]
-        self.Ni = [0, pre['Ni'], real['Ni'], 0, 0, 0]
-        self.Cr = [0, pre['Cr'], real['Cr'], 0, 0, 0]
-        self.hard = [0, pre['hard'], real['hard'], 0, 0, 0]
+        # [符合flag，预计值，实测值，偏差绝对值， 偏差（预计-实测），预测的偏差， 动态权重偏差]
+        self.Fe = [0, pre['Fe'], real['Fe'], 0, 0, 0, 0]
+        self.Cl = [0, pre['Cl'], real['Cl'], 0, 0, 0, 0]
+        self.C = [0, pre['C'], real['C'], 0, 0, 0, 0]
+        self.N = [0, pre['N'], real['N'], 0, 0, 0, 0]
+        self.O = [0, pre['O'], real['O'], 0, 0, 0, 0]
+        self.Ni = [0, pre['Ni'], real['Ni'], 0, 0, 0, 0]
+        self.Cr = [0, pre['Cr'], real['Cr'], 0, 0, 0, 0]
+        self.hard = [0, pre['hard'], real['hard'], 0, 0, 0, 0]
         self.calculate_error()
 
     # 计算偏差

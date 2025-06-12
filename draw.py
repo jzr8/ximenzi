@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 
 
 # 按日期对指定元素的偏差进行曲线绘制
-def draw_error_by_date(ST, name):
+def draw_error_date(ST, name):
     # 按日期分组
     value_dict = defaultdict(list)
     for s in ST:
@@ -33,7 +33,7 @@ def draw_error_by_date(ST, name):
 
 
 # 按炉子序列号对指定元素的偏差进行曲线绘制
-def draw_error_by_number(ST, name):
+def draw_error_number(ST, name):
     # 排序  按照日期从小到大  序号从小到大
     ST.sort(key=lambda s: (s.parse_date(), s.number))
 
@@ -41,7 +41,7 @@ def draw_error_by_number(ST, name):
     y_values = []
     for i, st in enumerate(ST, 1):
         x_labels.append(i)
-        y_values.append(st.Fe[4])
+        y_values.append(getattr(st, name)[4])
 
     # 画柱状图
     plt.figure(figsize=(8, 5))

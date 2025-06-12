@@ -10,6 +10,7 @@ from method.EWMA import *
 from method.window_LR import *
 from method.kalman_filter import *
 from method.kalman_EWMA import *
+from method.MLP import *
 
 
 # 读取一个日期的excel表格 将其中的每个炉次提取为Stove对象  返回Stove对象的列表
@@ -165,7 +166,7 @@ def stat(st_list, get_stand):
 
 
 # 设置各个元素想要达到的指标，逐步增加标准偏差，使得达到指定值
-def set_accord():
+def set_accord(ST):
     # 设置符合率  没要求就设置为0即可
     stand_p = {'Fe': 0, 'Cl': 0, 'C': 0, 'N': 0, 'O': 0, 'Ni': 0, 'Cr': 0, 'hard': 0}
 
@@ -251,8 +252,9 @@ if __name__ == '__main__':
     '''-----------------------------------------------------------'''
 
     '''----------------------相关曲线图绘制-------------------------'''
-    # draw_error_by_date(ST, 'Fe')  # 对指定元素绘制偏差曲线  按天
-    # draw_error_by_number(ST, 'Cl')  # 按炉次
+    # draw_error_date(ST, 'Fe')  # 对指定元素绘制偏差曲线  按天
+    # draw_error_number(ST, 'Cl')  # 按炉次
+    draw_dynamic_weight_by_num(ST, 'Fe', gate=0.009)  # 偏差乘上动态权重
 
     '''-----------------------------------------------------------'''
 
@@ -262,7 +264,7 @@ if __name__ == '__main__':
     # correct_opti_two(ST, stand, 'Fe')  # 直接通过遍历找出两个参数的最优组合
 
     # 设置指定的阈值（gate）、权重（theta），返回指定元素的符合率（通过EWMA修正后）
-    # EWMA_correct(ST, stand, 'Fe', gate=0.009, theta=0.25)
+    # EWMA_correct(ST, stand, 'Fe', gate=0.009, theta=0.5)
 
     '''-----------------------------------------------------------'''
 
@@ -282,10 +284,25 @@ if __name__ == '__main__':
     '''------------------------------------------------------------'''
 
     '''------------------------kalman+EWMA-------------------------'''
-    # kalman+EWMA预测的均值 作为 最终预测偏差
-    # kalman_EWMA_correct(ST, stand, 'Fe', gate=0.009, theta=0.75)
+    # kalman+EWMA预测的加权值 作为 最终预测偏差
+    # kalman_EWMA_correct(ST, stand, 'Fe', gate=0.009, theta=0.75, alpha=0.9)
 
     # 遍历得到最优参数
     # kalman_EWMA_opti_two(ST, stand, 'Fe')
+
+    '''------------------------------------------------------------'''
+
+    '''-------------------------MLP(多层感知机)----------------------'''
+    # input = Path('../compare_out_files_by_sheet_5/')  # 输入文件夹路径
+    # month = ['5']  # 提取表格的月份
+    # date = [str(i) for i in range(1, 32)]  # 提取表格的日期 想要提取1~31日的，则设置为(1，32)
+    # # 得到测试用的炉子列表
+    # ST_test = get_ST(input, month, date)
+
+    # 将ST作为训练数据集，ST_test作为测试集   进行MLP预测
+    # MLP_correct(ST, ST_test, stand, 'Fe', 10, 0.009)
+
+    # 利用训练集设置超参数
+    # set_train_parameter(ST, 'Fe', 10, 0.009)
 
     '''------------------------------------------------------------'''

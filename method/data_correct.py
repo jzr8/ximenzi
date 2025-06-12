@@ -1,5 +1,7 @@
 from collections import defaultdict
 import matplotlib.pyplot as plt
+import math
+import numpy as np
 
 
 # 利用偏差去修正预测 得到的结果
@@ -103,12 +105,15 @@ def draw_error_by_date(ST, name, pre_error):
         num = len(y_values) - len(pre_error)
         pre_error = [0]*num + pre_error
 
+    correct_abs_error = [x - y for x, y in zip(y_values, pre_error)]  # 修正后的偏差
+
     # 创建图形和坐标轴
     fig, ax = plt.subplots()
     # 绘制柱状图
     ax.bar(x_labels, y_values, color='skyblue', label='real')
     # 绘制折线图
     ax.plot(x_labels, pre_error, color='orange', marker='o', label='predict')
+    ax.plot(x_labels, correct_abs_error, color='red', marker='o', label='abs error')
     # 添加标签和图例
     ax.set_xlabel('date')
     ax.set_ylabel('error')
@@ -129,7 +134,7 @@ def draw_error_by_number(ST, name, pre_error):
     y_values = []
     for i, st in enumerate(ST, 1):
         x_labels.append(i)
-        y_values.append(st.Fe[4])
+        y_values.append(getattr(st, name)[4])
 
     pre_error = pre_error[:-1]  # 去掉最后一个预测偏差
     # 对于缺少的预测偏差，用0填充（可能头几天的数据都不适合，都排除了，因此没有相应的预测偏差）
@@ -137,12 +142,76 @@ def draw_error_by_number(ST, name, pre_error):
         num = len(y_values) - len(pre_error)
         pre_error = [0]*num + pre_error
 
+    correct_abs_error = [x - y for x, y in zip(y_values, pre_error)]  # 修正后的偏差
+
     # 创建图形和坐标轴
     fig, ax = plt.subplots()
     # 绘制柱状图
     ax.bar(x_labels, y_values, color='skyblue', label='real')
     # 绘制折线图
     ax.plot(x_labels, pre_error, color='orange', marker='o', label='predict')
+    ax.plot(x_labels, correct_abs_error, color='red', marker='o', label='abs error')
+    # 添加标签和图例
+    ax.set_xlabel('date')
+    ax.set_ylabel('error')
+    ax.set_title(f'{name} error')
+    ax.legend()
+    plt.xticks(rotation=45)  # 旋转日期标签，防止重叠
+    plt.tight_layout()
+    # 显示图形
+    plt.show()
+
+
+def draw_dynamic_weight(gate):
+    def dynamic_weight_test(error, gate):
+        weight = (math.exp(gate*100) + 1) * (1 / (math.exp(abs(error)*100) + 1))
+        return weight
+
+    x_labels = []
+    weight_error = []
+    x = np.linspace(0, 0.05, 100)
+    for i in x:
+        x_labels.append(i)
+        weight_error.append(dynamic_weight_test(i, gate))
+
+    # 创建图形和坐标轴
+    fig, ax = plt.subplots()
+    # 绘制折线图
+    ax.plot(x_labels, weight_error, color='orange', marker='o', label='predict')
+    # 添加标签和图例
+    ax.set_xlabel('x')
+    ax.set_ylabel('weight')
+    ax.set_title('dynamic weight')
+    ax.legend()
+    plt.xticks(rotation=45)  # 旋转日期标签，防止重叠
+    plt.tight_layout()
+    # 显示图形
+    plt.show()
+
+
+def dynamic_weight(error, gate):
+    weight = (math.exp(gate*40) + 1) * (1 / (math.exp(abs(error)*40) + 1))
+    return error * weight
+
+
+def draw_dynamic_weight_by_num(ST, name, gate):
+    # 排序  按照日期从小到大  序号从小到大
+    ST.sort(key=lambda s: (s.parse_date(), s.number))
+
+    x_labels = []
+    y_values = []
+    weight_error = []
+    for i, st in enumerate(ST, 1):
+        x_labels.append(i)
+        y_values.append(getattr(st, name)[4])
+        weight_error.append(dynamic_weight(getattr(st, name)[4], gate))
+
+    # 创建图形和坐标轴
+    fig, ax = plt.subplots()
+    # 绘制柱状图
+    ax.bar(x_labels, y_values, color='skyblue', label='real')
+    # 绘制折线图
+    ax.plot(x_labels, weight_error, color='orange', marker='o', label='weight error')
     # 添加标签和图例
     ax.set_xlabel('date')
     ax.set_ylabel('error')
